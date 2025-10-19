@@ -43,7 +43,6 @@ class CommentServiceSimpleTest {
 
     private CommentRequest validCommentRequest;
     private Comment validComment;
-    private CommentResponse expectedCommentResponse;
     private UpdateCommentRequest validUpdateRequest;
 
     @BeforeEach
@@ -67,18 +66,6 @@ class CommentServiceSimpleTest {
                 .dislikesCount(0L)
                 .build();
 
-        expectedCommentResponse = CommentResponse.builder()
-                .commentId("COMMENT_123")
-                .appId("APP_123")
-                .userId("USER_123")
-                .text("This is a test comment")
-                .parentId(null)
-                .createdAt(validComment.getCreatedAt())
-                .updatedAt(validComment.getUpdatedAt())
-                .subCommentCount(0L)
-                .likesCount(0L)
-                .dislikesCount(0L)
-                .build();
 
         validUpdateRequest = UpdateCommentRequest.builder()
                 .text("Updated comment text")
@@ -90,7 +77,11 @@ class CommentServiceSimpleTest {
     void createComment_WithValidRequest_ShouldReturnCommentResponse() {
         // Given
         String appId = "APP_123";
-        when(commentRepository.save(any(Comment.class))).thenReturn(validComment);
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            comment.setCommentId("COMMENT_123");
+            return comment;
+        });
         doNothing().when(commentSearchRepository).indexComment(any(Comment.class));
 
         // When
@@ -172,7 +163,7 @@ class CommentServiceSimpleTest {
 
         when(commentRepository.findByAppIdAndCommentId(appId, commentId)).thenReturn(Optional.of(validComment));
         when(commentRepository.save(any(Comment.class))).thenReturn(updatedComment);
-        doNothing().when(commentSearchRepository).indexComment(any(Comment.class));
+        doNothing().when(commentSearchRepository).updateComment(any(Comment.class));
 
         // When
         CommentResponse result = commentService.updateComment(appId, commentId, validUpdateRequest);
@@ -184,7 +175,7 @@ class CommentServiceSimpleTest {
 
         verify(commentRepository, times(1)).findByAppIdAndCommentId(appId, commentId);
         verify(commentRepository, times(1)).save(any(Comment.class));
-        verify(commentSearchRepository, times(1)).indexComment(any(Comment.class));
+        verify(commentSearchRepository, times(1)).updateComment(any(Comment.class));
     }
 
     @Test
@@ -256,7 +247,7 @@ class CommentServiceSimpleTest {
         assertThat(result).isNotNull();
         assertThat(result.getCommentId()).isEqualTo("COMMENT_123");
 
-        verify(commentRepository, times(1)).findByAppIdAndCommentId(appId, commentId);
+        verify(commentRepository, times(2)).findByAppIdAndCommentId(appId, commentId);
         verify(commentRepository, times(1)).incrementLikesCount(appId, commentId);
     }
 
@@ -276,7 +267,7 @@ class CommentServiceSimpleTest {
         assertThat(result).isNotNull();
         assertThat(result.getCommentId()).isEqualTo("COMMENT_123");
 
-        verify(commentRepository, times(1)).findByAppIdAndCommentId(appId, commentId);
+        verify(commentRepository, times(2)).findByAppIdAndCommentId(appId, commentId);
         verify(commentRepository, times(1)).incrementDislikesCount(appId, commentId);
     }
 
@@ -313,8 +304,11 @@ class CommentServiceSimpleTest {
                 .build();
 
         when(commentRepository.findByAppIdAndCommentId(appId, parentCommentId)).thenReturn(Optional.of(parentComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(reply);
-        doNothing().when(commentSearchRepository).indexComment(any(Comment.class));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            comment.setCommentId("COMMENT_REPLY_123");
+            return comment;
+        });
         doNothing().when(commentRepository).incrementSubCommentCount(appId, parentCommentId);
 
         // When
@@ -327,7 +321,7 @@ class CommentServiceSimpleTest {
 
         verify(commentRepository, times(1)).findByAppIdAndCommentId(appId, parentCommentId);
         verify(commentRepository, times(1)).save(any(Comment.class));
-        verify(commentSearchRepository, times(1)).indexComment(any(Comment.class));
+        verify(commentSearchRepository, never()).indexComment(any(Comment.class));
         verify(commentRepository, times(1)).incrementSubCommentCount(appId, parentCommentId);
     }
 

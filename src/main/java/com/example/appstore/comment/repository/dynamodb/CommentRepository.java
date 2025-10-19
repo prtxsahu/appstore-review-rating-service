@@ -1,6 +1,7 @@
 package com.example.appstore.comment.repository.dynamodb;
 
 import com.example.appstore.comment.domain.Comment;
+import com.example.appstore.shared.dto.PaginatedResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -10,11 +11,14 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -82,59 +86,98 @@ public class CommentRepository {
     }
 
     /**
-     * Find top-level comments for an app (parent_id is null).
+     * Find top-level comments for an app (backward compatibility method).
+     * 
+     * @param appId The application ID
+     * @return List of top-level comments (first 10)
      */
     public List<Comment> findTopLevelCommentsByAppId(String appId) {
-        return findTopLevelCommentsByAppId(appId, 0, 10);
+        PaginatedResult<Comment> result = findTopLevelCommentsByAppId(appId, null, 10);
+        return result.getItems();
+    }
+    
+    /**
+     * Find paginated top-level comments for an app (backward compatibility with page-based pagination).
+     * 
+     * @param appId The application ID
+     * @param page Page number (0-based) - Note: This is less efficient than cursor-based pagination
+     * @param size Page size
+     * @return List of top-level comments
+     */
+    public List<Comment> findTopLevelCommentsByAppId(String appId, int page, int size) {
+        // For backward compatibility, we'll use a simple approach
+        // Note: This is less efficient than cursor-based pagination for large datasets
+        PaginatedResult<Comment> result = findTopLevelCommentsByAppId(appId, null, size * (page + 1));
+        List<Comment> allComments = result.getItems();
+        
+        int startIndex = page * size;
+        int endIndex = Math.min(startIndex + size, allComments.size());
+        
+        if (startIndex >= allComments.size()) {
+            return List.of();
+        }
+        
+        return allComments.subList(startIndex, endIndex);
     }
 
     /**
-     * Find paginated top-level comments for a specific app with sorting by createdAt DESC.
-     * Uses DynamoDB filter expression for efficient filtering.
+     * Find paginated top-level comments for an app using cursor-based pagination.
      * 
      * @param appId The application ID
-     * @param page Page number (0-based)
-     * @param size Page size
-     * @return List of top-level comments sorted by createdAt DESC (latest first)
+     * @param lastEvaluatedCommentId The cursor for pagination (commentId from previous page)
+     * @param pageSize Number of items per page
+     * @return PaginatedResult containing comments and pagination info
      */
-    public List<Comment> findTopLevelCommentsByAppId(String appId, int page, int size) {
+    public PaginatedResult<Comment> findTopLevelCommentsByAppId(String appId, String lastEvaluatedCommentId, int pageSize) {
         try {
-            log.debug("Finding paginated top-level comments for app: {}, page: {}, size: {}", appId, page, size);
+            log.debug("Finding paginated top-level comments for app: {}, from comment: {}, size: {}", 
+                      appId, lastEvaluatedCommentId, pageSize);
+
             DynamoDbTable<Comment> commentTable = getCommentTable();
-            Key key = Key.builder()
-                    .partitionValue(appId)
-                    .build();
-            
-            // Use filter expression to get only top-level comments (parent_id is null)
-            QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+            Key key = Key.builder().partitionValue(appId).build();
+
+            QueryEnhancedRequest.Builder queryBuilder = QueryEnhancedRequest.builder()
                     .queryConditional(software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo(key))
-                    .scanIndexForward(false) // Sort by sort key in descending order (latest first)
+                    .scanIndexForward(false) // newest first
                     .filterExpression(Expression.builder()
                             .expression("attribute_not_exists(parent_id)")
                             .build())
-                    .limit(size * 3) // Get more items to account for filtering, but limit to reasonable number
-                    .build();
-            
-            List<Comment> allComments = commentTable.query(request)
-                    .items()
-                    .stream()
-                    .filter(comment -> comment.getParentId() == null) // Additional filter for safety
-                    .collect(Collectors.toList());
-            
-            // Manual pagination since DynamoDB filter expressions don't guarantee exact counts
-            int startIndex = page * size;
-            int endIndex = Math.min(startIndex + size, allComments.size());
-            
-            if (startIndex >= allComments.size()) {
-                log.debug("Page {} is beyond available comments for app: {}", page, appId);
-                return List.of();
+                    .limit(pageSize);
+
+            // If client provided a cursor (lastEvaluatedCommentId)
+            if (lastEvaluatedCommentId != null && !lastEvaluatedCommentId.isEmpty()) {
+                queryBuilder.exclusiveStartKey(Map.of(
+                    "app_id", AttributeValue.builder().s(appId).build(),
+                    "comment_id", AttributeValue.builder().s(lastEvaluatedCommentId).build()
+                ));
             }
+
+            PageIterable<Comment> response = commentTable.query(queryBuilder.build());
             
-            List<Comment> paginatedComments = allComments.subList(startIndex, endIndex);
-            log.info("Found {} top-level comments for app: {}, page: {} (showing {}-{})", 
-                    paginatedComments.size(), appId, page, startIndex + 1, endIndex);
+            // Get the first page from the iterable
+            Page<Comment> firstPage = response.stream().findFirst().orElse(null);
             
-            return paginatedComments;
+            if (firstPage == null) {
+                return PaginatedResult.<Comment>builder()
+                        .items(List.of())
+                        .lastEvaluatedKey(null)
+                        .build();
+            }
+
+            List<Comment> comments = firstPage.items()
+                    .stream()
+                    .filter(c -> c.getParentId() == null)
+                    .collect(Collectors.toList());
+
+            Map<String, AttributeValue> lastKey = firstPage.lastEvaluatedKey();
+
+            log.info("Found {} top-level comments for app: {} with cursor: {}", 
+                    comments.size(), appId, lastEvaluatedCommentId);
+
+            return PaginatedResult.<Comment>builder()
+                    .items(comments)
+                    .lastEvaluatedKey(lastKey)
+                    .build();
         } catch (DynamoDbException e) {
             log.error("Error finding paginated top-level comments for app: {}", appId, e);
             throw new RuntimeException("Failed to find paginated top-level comments", e);

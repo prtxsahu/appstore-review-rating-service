@@ -39,6 +39,7 @@ public class AppService implements AppServiceInterface {
     /**
      * Create a new app.
      */
+    @Override
     public AppResponse createApp(CreateAppRequest request) {
         log.info("=== APP SERVICE: Creating app ===");
         log.info("Input - name: {}, description: {}", request.getName(), request.getDescription());
@@ -97,6 +98,7 @@ public class AppService implements AppServiceInterface {
     /**
      * Get basic app information (metadata + average rating only).
      */
+    @Override
     public AppResponse getAppBasicInfo(String appId) {
         log.info("=== APP SERVICE: Getting basic app info ===");
         log.info("Input - appId: {}", appId);
@@ -106,7 +108,7 @@ public class AppService implements AppServiceInterface {
             App app = appRepository.findById(appId)
                     .orElseThrow(() -> {
                         log.error("App not found in DynamoDB - appId: {}", appId);
-                        return new RuntimeException("App not found: " + appId);
+                        return new com.example.appstore.shared.exception.ResourceNotFoundException("App not found: " + appId);
                     });
             log.info("App found in DynamoDB - appId: {}, name: {}", app.getAppId(), app.getName());
             log.debug("Retrieved app entity: {}", app);
@@ -137,6 +139,7 @@ public class AppService implements AppServiceInterface {
     /**
      * Get app by ID.
      */
+    @Override
     public AppResponse getAppById(String appId) {
         return getAppById(appId, null);
     }
@@ -144,6 +147,7 @@ public class AppService implements AppServiceInterface {
     /**
      * Get app by ID with optional user rating.
      */
+    @Override
     public AppResponse getAppById(String appId, String userId) {
         log.info("=== APP SERVICE: Getting app by ID ===");
         log.info("Input - appId: {}", appId);
@@ -153,7 +157,7 @@ public class AppService implements AppServiceInterface {
             App app = appRepository.findById(appId)
                     .orElseThrow(() -> {
                         log.error("App not found in DynamoDB - appId: {}", appId);
-                        return new RuntimeException("App not found: " + appId);
+                        return new com.example.appstore.shared.exception.ResourceNotFoundException("App not found: " + appId);
                     });
             log.info("App found in DynamoDB - appId: {}, name: {}", app.getAppId(), app.getName());
             log.debug("Retrieved app entity: {}", app);
@@ -226,6 +230,7 @@ public class AppService implements AppServiceInterface {
     /**
      * Search apps by text.
      */
+    @Override
     public List<AppResponse> searchApps(String query, int page, int size) {
         log.info("=== APP SERVICE: Searching apps ===");
         log.info("Input - query: {}, page: {}, size: {}", query, page, size);
@@ -261,6 +266,7 @@ public class AppService implements AppServiceInterface {
     /**
      * Check if app exists.
      */
+    @Override
     public boolean appExists(String appId) {
         log.info("=== APP SERVICE: Checking if app exists ===");
         log.info("Input - appId: {}", appId);
@@ -280,36 +286,28 @@ public class AppService implements AppServiceInterface {
      * Calculates average rating from totalSum and totalCount.
      */
     private BigDecimal fetchAverageRatingFromAggregates(String appId) {
-        try {
-            log.debug("Fetching aggregate data for appId: {}", appId);
+        log.debug("Fetching aggregate data for appId: {}", appId);
+        
+        // Try to find aggregate data for the app
+        var aggregateOpt = aggregateRepository.findByAppId(appId);
+        
+        if (aggregateOpt.isPresent()) {
+            var aggregate = aggregateOpt.get();
+            log.debug("Found aggregate data - appId: {}, totalSum: {}, totalCount: {}", 
+                    appId, aggregate.getTotalSum(), aggregate.getTotalCount());
             
-            // Try to find aggregate data for the app
-            var aggregateOpt = aggregateRepository.findByAppId(appId);
-            
-            if (aggregateOpt.isPresent()) {
-                var aggregate = aggregateOpt.get();
-                log.debug("Found aggregate data - appId: {}, totalSum: {}, totalCount: {}", 
-                        appId, aggregate.getTotalSum(), aggregate.getTotalCount());
-                
-                // Calculate average rating
-                if (aggregate.getTotalCount() != null && aggregate.getTotalCount() > 0) {
-                    BigDecimal average = BigDecimal.valueOf(aggregate.getTotalSum())
-                            .divide(BigDecimal.valueOf(aggregate.getTotalCount()), 2, RoundingMode.HALF_UP);
-                    log.debug("Calculated average rating: {} for appId: {}", average, appId);
-                    return average;
-                } else {
-                    log.warn("Total count is 0 or null for appId: {}, returning 0.00", appId);
-                    return BigDecimal.ZERO;
-                }
+            // Calculate average rating
+            if (aggregate.getTotalCount() != null && aggregate.getTotalCount() > 0) {
+                BigDecimal average = BigDecimal.valueOf(aggregate.getTotalSum())
+                        .divide(BigDecimal.valueOf(aggregate.getTotalCount()), 2, RoundingMode.HALF_UP);
+                log.debug("Calculated average rating: {} for appId: {}", average, appId);
+                return average;
             } else {
-                log.warn("No aggregate data found for appId: {}, returning 0.00", appId);
+                log.warn("Total count is 0 or null for appId: {}, returning 0.00", appId);
                 return BigDecimal.ZERO;
             }
-            
-        } catch (Exception e) {
-            log.error("Error fetching average rating from aggregates for appId: {}, error: {}", 
-                    appId, e.getMessage(), e);
-            // Return 0.00 as fallback if there's an error
+        } else {
+            log.warn("No aggregate data found for appId: {}, returning 0.00", appId);
             return BigDecimal.ZERO;
         }
     }

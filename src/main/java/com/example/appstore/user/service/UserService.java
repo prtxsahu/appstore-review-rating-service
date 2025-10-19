@@ -25,6 +25,7 @@ public class UserService implements UserServiceInterface {
     /**
      * Create a new user.
      */
+    @Override
     public UserResponse createUser(CreateUserRequest request) {
         log.info("=== USER SERVICE: Creating user ===");
         log.info("Input - name: {}", request.getName());
@@ -68,6 +69,7 @@ public class UserService implements UserServiceInterface {
     /**
      * Get user by ID.
      */
+    @Override
     public UserResponse getUserById(String userId) {
         log.info("=== USER SERVICE: Getting user by ID ===");
         log.info("Input - userId: {}", userId);
@@ -77,7 +79,7 @@ public class UserService implements UserServiceInterface {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> {
                         log.error("User not found in DynamoDB - userId: {}", userId);
-                        return new RuntimeException("User not found: " + userId);
+                        return new com.example.appstore.shared.exception.ResourceNotFoundException("User not found: " + userId);
                     });
             log.info("User found in DynamoDB - userId: {}, name: {}", user.getUserId(), user.getName());
             log.debug("Retrieved user entity: {}", user);
@@ -101,6 +103,7 @@ public class UserService implements UserServiceInterface {
     /**
      * Check if user exists.
      */
+    @Override
     public boolean userExists(String userId) {
         log.info("=== USER SERVICE: Checking if user exists ===");
         log.info("Input - userId: {}", userId);

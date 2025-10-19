@@ -35,6 +35,7 @@ public class RatingService implements RatingServiceInterface {
      * @param ratingValue The rating value (1-5)
      * @return The created rating
      */
+    @Override
     public Rating createRating(String appId, String userId, Integer ratingValue) {
         log.info("Creating rating - appId: {}, userId: {}, value: {}", appId, userId, ratingValue);
         
@@ -76,6 +77,7 @@ public class RatingService implements RatingServiceInterface {
      * @param newRatingValue The new rating value (1-5)
      * @return The updated rating
      */
+    @Override
     public Rating updateRating(String appId, String userId, Integer newRatingValue) {
         log.info("Updating rating - appId: {}, userId: {}, newValue: {}", appId, userId, newRatingValue);
         
@@ -120,6 +122,7 @@ public class RatingService implements RatingServiceInterface {
      * @param appId The application ID
      * @param userId The user ID
      */
+    @Override
     public void deleteRating(String appId, String userId) {
         log.info("Deleting rating - appId: {}, userId: {}", appId, userId);
         
@@ -149,6 +152,7 @@ public class RatingService implements RatingServiceInterface {
      * @param userId The user ID
      * @return The rating if found, empty otherwise
      */
+    @Override
     public Optional<Rating> getRating(String appId, String userId) {
         log.debug("Getting rating - appId: {}, userId: {}", appId, userId);
         return ratingRepository.findByAppIdAndUserId(appId, userId);
@@ -160,6 +164,7 @@ public class RatingService implements RatingServiceInterface {
      * @param appId The application ID
      * @return List of ratings for the app
      */
+    @Override
     public List<Rating> getRatingsForApp(String appId) {
         log.debug("Getting ratings for app - appId: {}", appId);
         return ratingRepository.findByAppId(appId);
@@ -171,6 +176,7 @@ public class RatingService implements RatingServiceInterface {
      * @param userId The user ID
      * @return List of ratings by the user
      */
+    @Override
     public List<Rating> getRatingsForUser(String userId) {
         log.debug("Getting ratings for user - userId: {}", userId);
         return ratingRepository.findByUserId(userId);
@@ -183,6 +189,7 @@ public class RatingService implements RatingServiceInterface {
      * @param userId The user ID
      * @return true if rating exists, false otherwise
      */
+    @Override
     public boolean ratingExists(String appId, String userId) {
         return ratingRepository.existsByAppIdAndUserId(appId, userId);
     }
@@ -193,6 +200,7 @@ public class RatingService implements RatingServiceInterface {
      * @param appId The application ID
      * @return Number of ratings for the app
      */
+    @Override
     public long getRatingCountForApp(String appId) {
         return ratingRepository.countByAppId(appId);
     }
@@ -204,6 +212,7 @@ public class RatingService implements RatingServiceInterface {
      * @param userId The user ID
      * @return The rating value if found, null if no rating exists
      */
+    @Override
     public Integer getUserRatingForApp(String appId, String userId) {
         log.info("Getting user rating - appId: {}, userId: {}", appId, userId);
         
@@ -231,6 +240,7 @@ public class RatingService implements RatingServiceInterface {
      * 
      * @param observer The observer to register
      */
+    @Override
     public void register(RatingObserver observer) {
         synchronized (observers) {
             if (!observers.contains(observer)) {
@@ -247,6 +257,7 @@ public class RatingService implements RatingServiceInterface {
      * 
      * @param observer The observer to unregister
      */
+    @Override
     public void unregister(RatingObserver observer) {
         synchronized (observers) {
             if (observers.remove(observer)) {
@@ -262,6 +273,7 @@ public class RatingService implements RatingServiceInterface {
      * 
      * @return Number of observers
      */
+    @Override
     public int getObserverCount() {
         synchronized (observers) {
             return observers.size();

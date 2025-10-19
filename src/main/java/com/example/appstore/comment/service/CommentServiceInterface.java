@@ -3,6 +3,7 @@ package com.example.appstore.comment.service;
 import com.example.appstore.comment.dto.CommentRequest;
 import com.example.appstore.comment.dto.CommentResponse;
 import com.example.appstore.comment.dto.UpdateCommentRequest;
+import com.example.appstore.shared.dto.PaginatedResult;
 import com.example.appstore.shared.dto.SearchResponse;
 
 import java.util.List;
@@ -107,6 +108,10 @@ public interface CommentServiceInterface {
      * @return List of comment responses by the user
      */
     List<CommentResponse> getCommentsByUserForApp(String appId, String userId);
+
+
+    PaginatedResult<CommentResponse> getTopLevelCommentsByAppIdWithCursor(String appId, String cursor, int pageSize);
+
     
     /**
      * Get top-level comments for an app excluding a specific user.

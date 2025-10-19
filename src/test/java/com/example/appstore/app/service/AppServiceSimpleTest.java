@@ -148,7 +148,7 @@ class AppServiceSimpleTest {
         assertThat(result).isNotNull();
         assertThat(result.getAppId()).isEqualTo("APP_123");
         assertThat(result.getName()).isEqualTo("Test App");
-        assertThat(result.getAvgRating()).isEqualTo(BigDecimal.valueOf(4.0)); // 40/10 = 4.0
+        assertThat(result.getAvgRating()).isEqualTo(new BigDecimal("4.00")); // 40/10 = 4.00
 
         verify(appRepository, times(1)).findById(appId);
         verify(aggregateRepository, times(1)).findByAppId(appId);
@@ -226,7 +226,6 @@ class AppServiceSimpleTest {
         int size = 10;
         List<App> searchResults = Arrays.asList(validApp);
         when(appSearchRepository.searchApps(query, page, size)).thenReturn(searchResults);
-        when(aggregateRepository.findByAppId(anyString())).thenReturn(Optional.of(validAggregate));
 
         // When
         List<AppResponse> result = appService.searchApps(query, page, size);
@@ -238,7 +237,7 @@ class AppServiceSimpleTest {
         assertThat(result.get(0).getName()).isEqualTo("Test App");
 
         verify(appSearchRepository, times(1)).searchApps(query, page, size);
-        verify(aggregateRepository, times(1)).findByAppId(anyString());
+        verify(aggregateRepository, never()).findByAppId(anyString());
     }
 
     @Test

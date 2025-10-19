@@ -92,12 +92,17 @@ public class AppController {
      */
     @GetMapping
     public ResponseEntity<SearchResponse<AppSearchResponse>> searchApps(
-            @RequestParam String keyword,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
         
         log.info("=== APP CONTROLLER: Searching apps ===");
         log.info("Request received - keyword: {}, page: {}, size: {}", keyword, page, size);
+        
+        // Validate required parameters
+        if (keyword == null) {
+            throw new com.example.appstore.shared.exception.BadRequestException("Keyword parameter is required");
+        }
         
         try {
             // Call AppService to search apps
@@ -116,8 +121,7 @@ public class AppController {
             
             // Calculate pagination info
             long totalElements = searchResults.size();
-            long totalPages = (totalElements + size - 1) / size;
-            boolean hasNext = page < totalPages - 1;
+            boolean hasNext = totalElements == size; // if the page is full , then it might have more elements
             boolean hasPrevious = page > 0;
             
             SearchResponse<AppSearchResponse> response = SearchResponse.<AppSearchResponse>builder()
@@ -125,7 +129,6 @@ public class AppController {
                     .page(page)
                     .size(size)
                     .totalElements(totalElements)
-                    .totalPages((int) totalPages)
                     .hasNext(hasNext)
                     .hasPrevious(hasPrevious)
                     .build();

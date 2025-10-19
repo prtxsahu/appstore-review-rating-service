@@ -5,6 +5,7 @@ import com.example.appstore.comment.dto.CommentRequest;
 import com.example.appstore.comment.dto.CommentResponse;
 import com.example.appstore.comment.dto.UpdateCommentRequest;
 import com.example.appstore.comment.service.CommentServiceInterface;
+import com.example.appstore.shared.dto.PaginatedResult;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,39 +51,31 @@ public class CommentController {
     }
 
     /**
-     * Get paginated comments for an app.
-     * GET /apps/{appId}/comments?page=0&size=10
+     * Get paginated comments for an app using cursor-based pagination.
+     * GET /apps/{appId}/comments?cursor=COMMENT_123&size=10
      */
     @GetMapping
-    public ResponseEntity<CommentPageResponse> getComments(
+    public ResponseEntity<PaginatedResult<CommentResponse>> getComments(
             @PathVariable String appId,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "10") int size) {
         
-        log.info("=== COMMENT CONTROLLER: Getting comments ===");
-        log.info("Request received - appId: {}, page: {}, size: {}", appId, page, size);
+        log.info("=== COMMENT CONTROLLER: Getting comments (cursor-based) ===");
+        log.info("Request received - appId: {}, cursor: {}, size: {}", appId, cursor, size);
         
         try {
-            List<CommentResponse> comments = commentService.getTopLevelCommentsByAppId(appId, page, size);
+
+            PaginatedResult<CommentResponse> result = commentService.getTopLevelCommentsByAppIdWithCursor(appId, cursor, size);
             
-            // Determine if there are more comments (hasNext)
-            boolean hasNext = comments.size() == size; // If we got exactly the requested size, there might be more
-            
-            CommentPageResponse response = CommentPageResponse.builder()
-                    .comments(comments)
-                    .page(page)
-                    .size(size)
-                    .hasNext(hasNext)
-                    .build();
-            
-            log.info("Comments retrieved successfully - appId: {}, count: {}, page: {}", 
-                    appId, comments.size(), page);
-            return ResponseEntity.ok(response);
+            log.info("Comments retrieved successfully - appId: {}, count: {}, hasNext: {}", 
+                    appId, result.getItems().size(), result.hasNextPage());
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Failed to get comments - appId: {}, error: {}", appId, e.getMessage(), e);
             throw e;
         }
     }
+
 
     /**
      * Update a comment by ID.

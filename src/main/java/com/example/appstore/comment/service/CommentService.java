@@ -4,6 +4,7 @@ import com.example.appstore.comment.domain.Comment;
 import com.example.appstore.comment.dto.CommentRequest;
 import com.example.appstore.comment.dto.CommentResponse;
 import com.example.appstore.shared.dto.SearchResponse;
+import com.example.appstore.shared.dto.PaginatedResult;
 import com.example.appstore.comment.dto.UpdateCommentRequest;
 import com.example.appstore.comment.repository.dynamodb.CommentRepository;
 import com.example.appstore.comment.repository.elasticsearch.CommentSearchRepository;
@@ -30,6 +31,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Create a new comment with dual-write to DynamoDB and Elasticsearch.
      */
+    @Override
     public CommentResponse createComment(String appId, CommentRequest request) {
         log.info("=== COMMENT SERVICE: Creating comment ===");
         log.info("Input - appId: {}, userId: {}", 
@@ -87,6 +89,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Get paginated top-level comments for an app.
      */
+    @Override
     public List<CommentResponse> getTopLevelCommentsByAppId(String appId, int page, int size) {
         log.info("=== COMMENT SERVICE: Getting top-level comments ===");
         log.info("Input - appId: {}, page: {}, size: {}", appId, page, size);
@@ -114,6 +117,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Update a comment by ID with dual-write to DynamoDB and Elasticsearch.
      */
+    @Override
     public CommentResponse updateComment(String appId, String commentId, UpdateCommentRequest request) {
         log.info("=== COMMENT SERVICE: Updating comment ===");
         log.info("Input - appId: {}, commentId: {}", appId, commentId);
@@ -123,7 +127,7 @@ public class CommentService implements CommentServiceInterface {
             Comment existingComment = commentRepository.findByAppIdAndCommentId(appId, commentId)
                     .orElseThrow(() -> {
                         log.error("Comment not found - appId: {}, commentId: {}", appId, commentId);
-                        return new RuntimeException("Comment not found: " + commentId);
+                        return new com.example.appstore.shared.exception.ResourceNotFoundException("Comment not found: " + commentId);
                     });
 
             log.info("Found existing comment - commentId: {}", commentId);
@@ -164,6 +168,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Delete a comment by ID with dual-write to DynamoDB and Elasticsearch.
      */
+    @Override
     public void deleteComment(String appId, String commentId) {
         log.info("=== COMMENT SERVICE: Deleting comment ===");
         log.info("Input - appId: {}, commentId: {}", appId, commentId);
@@ -173,7 +178,7 @@ public class CommentService implements CommentServiceInterface {
             commentRepository.findByAppIdAndCommentId(appId, commentId)
                     .orElseThrow(() -> {
                         log.error("Comment not found - appId: {}, commentId: {}", appId, commentId);
-                        return new RuntimeException("Comment not found: " + commentId);
+                        return new com.example.appstore.shared.exception.ResourceNotFoundException("Comment not found: " + commentId);
                     });
 
             log.info("Found existing comment - commentId: {}", commentId);
@@ -198,6 +203,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Like a comment by ID.
      */
+    @Override
     public CommentResponse likeComment(String appId, String commentId) {
         log.info("=== COMMENT SERVICE: Liking comment ===");
         log.info("Input - appId: {}, commentId: {}", appId, commentId);
@@ -207,7 +213,7 @@ public class CommentService implements CommentServiceInterface {
             commentRepository.findByAppIdAndCommentId(appId, commentId)
                     .orElseThrow(() -> {
                         log.error("Comment not found - appId: {}, commentId: {}", appId, commentId);
-                        return new RuntimeException("Comment not found: " + commentId);
+                        return new com.example.appstore.shared.exception.ResourceNotFoundException("Comment not found: " + commentId);
                     });
 
             log.info("Found existing comment - commentId: {}", commentId);
@@ -218,7 +224,7 @@ public class CommentService implements CommentServiceInterface {
 
             // Get updated comment
             Comment updatedComment = commentRepository.findByAppIdAndCommentId(appId, commentId)
-                    .orElseThrow(() -> new RuntimeException("Comment not found after update"));
+                    .orElseThrow(() -> new com.example.appstore.shared.exception.ResourceNotFoundException("Comment not found after update"));
 
             // Update Elasticsearch with new likes count
             log.info("Updating Elasticsearch with new likes count - commentId: {}", commentId);
@@ -239,6 +245,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Dislike a comment by ID.
      */
+    @Override
     public CommentResponse dislikeComment(String appId, String commentId) {
         log.info("=== COMMENT SERVICE: Disliking comment ===");
         log.info("Input - appId: {}, commentId: {}", appId, commentId);
@@ -248,7 +255,7 @@ public class CommentService implements CommentServiceInterface {
             commentRepository.findByAppIdAndCommentId(appId, commentId)
                     .orElseThrow(() -> {
                         log.error("Comment not found - appId: {}, commentId: {}", appId, commentId);
-                        return new RuntimeException("Comment not found: " + commentId);
+                        return new com.example.appstore.shared.exception.ResourceNotFoundException("Comment not found: " + commentId);
                     });
 
             log.info("Found existing comment - commentId: {}", commentId);
@@ -259,7 +266,7 @@ public class CommentService implements CommentServiceInterface {
 
             // Get updated comment
             Comment updatedComment = commentRepository.findByAppIdAndCommentId(appId, commentId)
-                    .orElseThrow(() -> new RuntimeException("Comment not found after update"));
+                    .orElseThrow(() -> new com.example.appstore.shared.exception.ResourceNotFoundException("Comment not found after update"));
 
             // Update Elasticsearch with new dislikes count
             log.info("Updating Elasticsearch with new dislikes count - commentId: {}", commentId);
@@ -281,6 +288,7 @@ public class CommentService implements CommentServiceInterface {
      * Create a reply to a comment (sub-comment).
      * Only saves to DynamoDB, not indexed in Elasticsearch.
      */
+    @Override
     public CommentResponse createReply(String appId, String parentCommentId, CommentRequest request) {
         log.info("=== COMMENT SERVICE: Creating reply ===");
         log.info("Input - appId: {}, parentCommentId: {}, userId: {}", 
@@ -292,7 +300,7 @@ public class CommentService implements CommentServiceInterface {
             commentRepository.findByAppIdAndCommentId(appId, parentCommentId)
                     .orElseThrow(() -> {
                         log.error("Parent comment not found - appId: {}, parentCommentId: {}", appId, parentCommentId);
-                        return new RuntimeException("Parent comment not found: " + parentCommentId);
+                        return new com.example.appstore.shared.exception.ResourceNotFoundException("Parent comment not found: " + parentCommentId);
                     });
 
             log.info("Parent comment validated - parentCommentId: {}", parentCommentId);
@@ -339,6 +347,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Get paginated replies for a comment.
      */
+    @Override
     public List<CommentResponse> getRepliesByParentId(String parentCommentId, int page, int size) {
         log.info("=== COMMENT SERVICE: Getting replies ===");
         log.info("Input - parentCommentId: {}, page: {}, size: {}", parentCommentId, page, size);
@@ -386,6 +395,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Search comments within a specific app by keyword with pagination.
      */
+    @Override
     public SearchResponse<CommentResponse> searchCommentsByAppId(String appId, String keyword, int page, int size) {
         log.info("=== COMMENT SERVICE: Searching comments ===");
         log.info("Input - appId: {}, keyword: {}, page: {}, size: {}", appId, keyword, page, size);
@@ -427,6 +437,7 @@ public class CommentService implements CommentServiceInterface {
     /**
      * Get all comments made by a specific user for an app.
      */
+    @Override
     public List<CommentResponse> getCommentsByUserForApp(String appId, String userId) {
         log.info("=== COMMENT SERVICE: Getting user comments ===");
         log.info("Input - appId: {}, userId: {}", appId, userId);
@@ -453,8 +464,50 @@ public class CommentService implements CommentServiceInterface {
     }
 
     /**
+     * Get paginated top-level comments for an app using cursor-based pagination (recommended approach).
+     * This method provides better performance for large datasets compared to page-based pagination.
+     * 
+     * @param appId The app ID
+     * @param cursor The cursor from the previous page (null for first page)
+     * @param pageSize Number of items per page
+     * @return PaginatedResult containing comments and pagination info
+     */
+    @Override
+    public PaginatedResult<CommentResponse> getTopLevelCommentsByAppIdWithCursor(String appId, String cursor, int pageSize) {
+        log.info("=== COMMENT SERVICE: Getting top-level comments with cursor ===");
+        log.info("Input - appId: {}, cursor: {}, pageSize: {}", appId, cursor, pageSize);
+
+        try {
+            log.info("Fetching top-level comments from DynamoDB with cursor - appId: {}", appId);
+            PaginatedResult<Comment> result = commentRepository.findTopLevelCommentsByAppId(appId, cursor, pageSize);
+            log.info("Found {} top-level comments for appId: {} with cursor: {}", result.getItems().size(), appId, cursor);
+
+            // Convert to response DTOs
+            List<CommentResponse> responses = result.getItems().stream()
+                    .map(this::convertToResponse)
+                    .collect(Collectors.toList());
+
+            // Create paginated result with response DTOs
+            PaginatedResult<CommentResponse> responseResult = PaginatedResult.<CommentResponse>builder()
+                    .items(responses)
+                    .lastEvaluatedKey(result.getLastEvaluatedKey())
+                    .build();
+
+            log.info("Comment retrieval completed successfully - appId: {}, count: {}, hasNext: {}", 
+                    appId, responses.size(), responseResult.hasNextPage());
+            log.debug("Response DTOs: {}", responses);
+            return responseResult;
+
+        } catch (Exception e) {
+            log.error("Failed to get comments with cursor - appId: {}, error: {}", appId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
      * Get paginated top-level comments for an app excluding comments by a specific user.
      */
+    @Override
     public List<CommentResponse> getTopLevelCommentsByAppIdExcludingUser(String appId, String userId, int page, int size) {
         log.info("=== COMMENT SERVICE: Getting top-level comments excluding user ===");
         log.info("Input - appId: {}, userId: {}, page: {}, size: {}", appId, userId, page, size);

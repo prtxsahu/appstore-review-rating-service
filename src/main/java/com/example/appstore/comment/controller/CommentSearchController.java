@@ -25,13 +25,22 @@ public class CommentSearchController {
      */
     @GetMapping("/search")
     public ResponseEntity<SearchResponse<CommentResponse>> searchComments(
-            @RequestParam String appId,
-            @RequestParam String keyword,
+            @RequestParam(required = false) String appId,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
         
         log.info("=== COMMENT SEARCH CONTROLLER: Searching comments ===");
         log.info("Request received - appId: {}, keyword: {}, page: {}, size: {}", appId, keyword, page, size);
+        
+        // Validate required parameters
+        if (appId == null || appId.trim().isEmpty()) {
+            throw new com.example.appstore.shared.exception.BadRequestException("AppId parameter is required and cannot be empty");
+        }
+        
+        if (keyword == null || keyword.trim().isEmpty()) {
+            throw new com.example.appstore.shared.exception.BadRequestException("Keyword parameter is required and cannot be empty");
+        }
         
         try {
             SearchResponse<CommentResponse> response = commentService.searchCommentsByAppId(appId, keyword, page, size);
@@ -43,7 +52,7 @@ public class CommentSearchController {
             
         } catch (Exception e) {
             log.error("Error searching comments - appId: {}, keyword: {}, error: {}", appId, keyword, e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw e;
         }
     }
 }

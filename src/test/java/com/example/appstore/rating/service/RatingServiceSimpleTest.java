@@ -38,7 +38,7 @@ class RatingServiceSimpleTest {
     private RatingService ratingService;
 
     private Rating validRating;
-    private Rating updatedRating;
+
 
     @BeforeEach
     void setUp() {
@@ -51,13 +51,7 @@ class RatingServiceSimpleTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        updatedRating = Rating.builder()
-                .appId("APP_123")
-                .userId("USER_123")
-                .value(4)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
+
     }
 
     @Test
