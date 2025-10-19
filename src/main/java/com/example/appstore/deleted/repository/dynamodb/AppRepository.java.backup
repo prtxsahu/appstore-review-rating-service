@@ -1,0 +1,171 @@
+package com.example.appstore.repository.dynamodb;
+
+import com.example.appstore.domain.App;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Repository;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+/**
+ * Repository for App entity operations using DynamoDB Enhanced Client.
+ * Implements Repository pattern for data access abstraction.
+ */
+@Slf4j
+@Repository
+@RequiredArgsConstructor
+public class AppRepository {
+
+    private final DynamoDbEnhancedClient dynamoDbEnhancedClient;
+    private static final String TABLE_NAME = "apps";
+
+    private DynamoDbTable<App> getAppTable() {
+        return dynamoDbEnhancedClient.table(TABLE_NAME, TableSchema.fromBean(App.class));
+    }
+
+    /**
+     * Save an app to DynamoDB.
+     */
+    public App save(App app) {
+        log.info("=== APP REPOSITORY: Saving app to DynamoDB ===");
+        log.info("Input - appId: {}, name: {}", app.getAppId(), app.getName());
+        log.debug("Full app entity: {}", app);
+        
+        try {
+            DynamoDbTable<App> appTable = getAppTable();
+            log.debug("Retrieved DynamoDB table: {}", TABLE_NAME);
+            appTable.putItem(app);
+            log.info("App saved successfully to DynamoDB - appId: {}", app.getAppId());
+            log.debug("Saved app entity: {}", app);
+            return app;
+        } catch (DynamoDbException e) {
+            log.error("DynamoDB error saving app - appId: {}, error: {}", app.getAppId(), e.getMessage(), e);
+            throw new RuntimeException("Failed to save app", e);
+        } catch (Exception e) {
+            log.error("Unexpected error saving app - appId: {}, error: {}", app.getAppId(), e.getMessage(), e);
+            throw new RuntimeException("Failed to save app", e);
+        }
+    }
+
+    /**
+     * Find an app by ID.
+     */
+    public Optional<App> findById(String appId) {
+        log.info("=== APP REPOSITORY: Finding app by ID ===");
+        log.info("Input - appId: {}", appId);
+        
+        try {
+            DynamoDbTable<App> appTable = getAppTable();
+            log.debug("Retrieved DynamoDB table: {}", TABLE_NAME);
+            
+            Key key = Key.builder()
+                    .partitionValue(appId)
+                    .build();
+            log.debug("Built DynamoDB key: {}", key);
+            
+            GetItemEnhancedRequest request = GetItemEnhancedRequest.builder()
+                    .key(key)
+                    .build();
+            log.debug("Built GetItemEnhancedRequest");
+            
+            App app = appTable.getItem(request);
+            if (app != null) {
+                log.info("App found in DynamoDB - appId: {}, name: {}", app.getAppId(), app.getName());
+                log.debug("Retrieved app entity: {}", app);
+                return Optional.of(app);
+            } else {
+                log.info("App not found in DynamoDB - appId: {}", appId);
+                return Optional.empty();
+            }
+        } catch (DynamoDbException e) {
+            log.error("DynamoDB error finding app - appId: {}, error: {}", appId, e.getMessage(), e);
+            throw new RuntimeException("Failed to find app", e);
+        } catch (Exception e) {
+            log.error("Unexpected error finding app - appId: {}, error: {}", appId, e.getMessage(), e);
+            throw new RuntimeException("Failed to find app", e);
+        }
+    }
+
+    /**
+     * Check if an app exists by ID.
+     */
+    public boolean existsById(String appId) {
+        log.info("=== APP REPOSITORY: Checking if app exists ===");
+        log.info("Input - appId: {}", appId);
+        
+        try {
+            boolean exists = findById(appId).isPresent();
+            log.info("App existence check completed - appId: {}, exists: {}", appId, exists);
+            return exists;
+        } catch (Exception e) {
+            log.error("Error checking app existence - appId: {}, error: {}", appId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Find all apps (use with caution for large datasets).
+     */
+    public List<App> findAll() {
+        try {
+            log.debug("Finding all apps");
+            DynamoDbTable<App> appTable = getAppTable();
+            
+            return appTable.scan()
+                    .items()
+                    .stream()
+                    .collect(Collectors.toList());
+        } catch (DynamoDbException e) {
+            log.error("Error finding all apps", e);
+            throw new RuntimeException("Failed to find all apps", e);
+        }
+    }
+
+    /**
+     * Update an app's average rating.
+     */
+    public App updateAverageRating(String appId, java.math.BigDecimal avgRating) {
+        try {
+            log.debug("Updating average rating for app: {} to {}", appId, avgRating);
+            Optional<App> appOpt = findById(appId);
+            if (appOpt.isPresent()) {
+                App app = appOpt.get();
+                app.setAvgRating(avgRating);
+                app.setUpdatedAt(java.time.Instant.now());
+                return save(app);
+            } else {
+                throw new RuntimeException("App not found: " + appId);
+            }
+        } catch (DynamoDbException e) {
+            log.error("Error updating average rating for app: {}", appId, e);
+            throw new RuntimeException("Failed to update average rating", e);
+        }
+    }
+
+    /**
+     * Delete an app by ID.
+     */
+    public void deleteById(String appId) {
+        try {
+            log.debug("Deleting app: {}", appId);
+            DynamoDbTable<App> appTable = getAppTable();
+            Key key = Key.builder()
+                    .partitionValue(appId)
+                    .build();
+            
+            appTable.deleteItem(key);
+            log.info("Successfully deleted app: {}", appId);
+        } catch (DynamoDbException e) {
+            log.error("Error deleting app: {}", appId, e);
+            throw new RuntimeException("Failed to delete app", e);
+        }
+    }
+}

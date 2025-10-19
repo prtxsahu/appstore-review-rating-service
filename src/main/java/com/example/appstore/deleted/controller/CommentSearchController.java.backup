@@ -1,0 +1,49 @@
+package com.example.appstore.controller;
+
+import com.example.appstore.dto.CommentResponse;
+import com.example.appstore.dto.SearchResponse;
+import com.example.appstore.service.CommentService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * Controller for comment search operations.
+ */
+@Slf4j
+@RestController
+@RequestMapping("/comments")
+@RequiredArgsConstructor
+public class CommentSearchController {
+
+    private final CommentService commentService;
+
+    /**
+     * Search comments by app ID and keyword.
+     * GET /comments/search?appId={appId}&keyword={keyword}&page={page}&size={size}
+     */
+    @GetMapping("/search")
+    public ResponseEntity<SearchResponse<CommentResponse>> searchComments(
+            @RequestParam String appId,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        
+        log.info("=== COMMENT SEARCH CONTROLLER: Searching comments ===");
+        log.info("Request received - appId: {}, keyword: {}, page: {}, size: {}", appId, keyword, page, size);
+        
+        try {
+            SearchResponse<CommentResponse> response = commentService.searchCommentsByAppId(appId, keyword, page, size);
+            
+            log.info("Comment search completed successfully - appId: {}, keyword: {}, results: {}", 
+                    appId, keyword, response.getItems().size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error searching comments - appId: {}, keyword: {}, error: {}", appId, keyword, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+}

@@ -1,0 +1,229 @@
+package com.example.appstore.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.*;
+
+/**
+ * Service for creating DynamoDB tables on application startup.
+ * Creates all required tables with proper schemas and indexes.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class DynamoDBTableInitializationService {
+
+    private final DynamoDbClient dynamoDbClient;
+
+    /**
+     * Create all required DynamoDB tables when the application is ready.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void createTablesOnStartup() {
+        log.info("Starting DynamoDB table creation...");
+        
+        try {
+            createUsersTable();
+            createAppsTable();
+            createRatingsTable();
+            createCommentsTable();
+            createAggregatesTable();
+            
+            log.info("All DynamoDB tables created successfully");
+        } catch (Exception e) {
+            log.error("Failed to create DynamoDB tables", e);
+            throw new RuntimeException("DynamoDB table creation failed", e);
+        }
+    }
+
+    private void createUsersTable() {
+        String tableName = "users";
+        log.info("Creating table: {}", tableName);
+        
+        CreateTableRequest request = CreateTableRequest.builder()
+                .tableName(tableName)
+                .keySchema(KeySchemaElement.builder()
+                        .attributeName("user_id")
+                        .keyType(KeyType.HASH)
+                        .build())
+                .attributeDefinitions(AttributeDefinition.builder()
+                        .attributeName("user_id")
+                        .attributeType(ScalarAttributeType.S)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .build();
+        
+        createTableIfNotExists(request);
+    }
+
+    private void createAppsTable() {
+        String tableName = "apps";
+        log.info("Creating table: {}", tableName);
+        
+        CreateTableRequest request = CreateTableRequest.builder()
+                .tableName(tableName)
+                .keySchema(KeySchemaElement.builder()
+                        .attributeName("app_id")
+                        .keyType(KeyType.HASH)
+                        .build())
+                .attributeDefinitions(AttributeDefinition.builder()
+                        .attributeName("app_id")
+                        .attributeType(ScalarAttributeType.S)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .build();
+        
+        createTableIfNotExists(request);
+    }
+
+    private void createRatingsTable() {
+        String tableName = "ratings";
+        log.info("Creating table: {}", tableName);
+        
+        CreateTableRequest request = CreateTableRequest.builder()
+                .tableName(tableName)
+                .keySchema(
+                        KeySchemaElement.builder()
+                                .attributeName("app_id")
+                                .keyType(KeyType.HASH)
+                                .build(),
+                        KeySchemaElement.builder()
+                                .attributeName("user_id")
+                                .keyType(KeyType.RANGE)
+                                .build()
+                )
+                .attributeDefinitions(
+                        AttributeDefinition.builder()
+                                .attributeName("app_id")
+                                .attributeType(ScalarAttributeType.S)
+                                .build(),
+                        AttributeDefinition.builder()
+                                .attributeName("user_id")
+                                .attributeType(ScalarAttributeType.S)
+                                .build()
+                )
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .build();
+        
+        createTableIfNotExists(request);
+    }
+
+    private void createCommentsTable() {
+        String tableName = "comments";
+        log.info("Creating table: {}", tableName);
+        
+        CreateTableRequest request = CreateTableRequest.builder()
+                .tableName(tableName)
+                .keySchema(
+                        KeySchemaElement.builder()
+                                .attributeName("app_id")
+                                .keyType(KeyType.HASH)
+                                .build(),
+                        KeySchemaElement.builder()
+                                .attributeName("comment_id")
+                                .keyType(KeyType.RANGE)
+                                .build()
+                )
+                .attributeDefinitions(
+                        AttributeDefinition.builder()
+                                .attributeName("app_id")
+                                .attributeType(ScalarAttributeType.S)
+                                .build(),
+                        AttributeDefinition.builder()
+                                .attributeName("comment_id")
+                                .attributeType(ScalarAttributeType.S)
+                                .build(),
+                        AttributeDefinition.builder()
+                                .attributeName("parent_id")
+                                .attributeType(ScalarAttributeType.S)
+                                .build()
+                )
+                .globalSecondaryIndexes(
+                        GlobalSecondaryIndex.builder()
+                                .indexName("parent_index")
+                                .keySchema(
+                                        KeySchemaElement.builder()
+                                                .attributeName("parent_id")
+                                                .keyType(KeyType.HASH)
+                                                .build()
+                                )
+                                .projection(Projection.builder()
+                                        .projectionType(ProjectionType.ALL)
+                                        .build())
+                                .build()
+                )
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .build();
+        
+        createTableIfNotExists(request);
+    }
+
+    private void createAggregatesTable() {
+        String tableName = "aggregates";
+        log.info("Creating table: {}", tableName);
+        
+        CreateTableRequest request = CreateTableRequest.builder()
+                .tableName(tableName)
+                .keySchema(KeySchemaElement.builder()
+                        .attributeName("app_id")
+                        .keyType(KeyType.HASH)
+                        .build())
+                .attributeDefinitions(AttributeDefinition.builder()
+                        .attributeName("app_id")
+                        .attributeType(ScalarAttributeType.S)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .build();
+        
+        createTableIfNotExists(request);
+    }
+
+    private void createTableIfNotExists(CreateTableRequest request) {
+        try {
+            // Check if table exists
+            DescribeTableRequest describeRequest = DescribeTableRequest.builder()
+                    .tableName(request.tableName())
+                    .build();
+            
+            try {
+                dynamoDbClient.describeTable(describeRequest);
+                log.info("Table {} already exists", request.tableName());
+                return;
+            } catch (ResourceNotFoundException e) {
+                // Table doesn't exist, create it
+                log.info("Table {} does not exist, creating...", request.tableName());
+            }
+            
+            // Create the table
+            dynamoDbClient.createTable(request);
+            log.info("Table {} created successfully", request.tableName());
+            
+            // Wait for table to be active
+            waitForTableToBeActive(request.tableName());
+            
+        } catch (Exception e) {
+            log.error("Error creating table: {}", request.tableName(), e);
+            throw new RuntimeException("Failed to create table: " + request.tableName(), e);
+        }
+    }
+
+    private void waitForTableToBeActive(String tableName) {
+        log.info("Waiting for table {} to become active...", tableName);
+        
+        try {
+            dynamoDbClient.waiter().waitUntilTableExists(
+                    DescribeTableRequest.builder()
+                            .tableName(tableName)
+                            .build()
+            );
+            log.info("Table {} is now active", tableName);
+        } catch (Exception e) {
+            log.error("Error waiting for table {} to become active", tableName, e);
+            throw new RuntimeException("Failed to wait for table: " + tableName, e);
+        }
+    }
+}

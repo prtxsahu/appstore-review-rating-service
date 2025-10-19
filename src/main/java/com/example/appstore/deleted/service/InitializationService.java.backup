@@ -1,0 +1,46 @@
+package com.example.appstore.service;
+
+import com.example.appstore.repository.elasticsearch.AppSearchRepository;
+import com.example.appstore.repository.elasticsearch.CommentSearchRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Service;
+
+/**
+ * Service for initializing DynamoDB tables and Elasticsearch indices on application startup.
+ * This ensures that all required tables and indices exist before the application starts serving requests.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class InitializationService {
+
+    private final AppSearchRepository appSearchRepository;
+    private final CommentSearchRepository commentSearchRepository;
+
+    /**
+     * Initialize all required tables and indices when the application is ready.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void initializeOnStartup() {
+        log.info("Starting application initialization...");
+        
+        try {
+            // Create Elasticsearch indices
+            log.info("Creating Elasticsearch indices...");
+            appSearchRepository.createIndexIfNotExists();
+            commentSearchRepository.createIndexIfNotExists();
+            log.info("Elasticsearch indices created successfully");
+            
+            // Note: DynamoDB tables are created automatically when first accessed
+            // due to LocalStack's behavior, but we could add explicit table creation here if needed
+            
+            log.info("Application initialization completed successfully");
+        } catch (Exception e) {
+            log.error("Failed to initialize application", e);
+            throw new RuntimeException("Application initialization failed", e);
+        }
+    }
+}
