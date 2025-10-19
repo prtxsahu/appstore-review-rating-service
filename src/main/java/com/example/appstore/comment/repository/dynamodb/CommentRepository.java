@@ -10,6 +10,8 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
 import java.util.List;
@@ -88,6 +90,7 @@ public class CommentRepository {
 
     /**
      * Find paginated top-level comments for a specific app with sorting by createdAt DESC.
+     * Uses DynamoDB filter expression for efficient filtering.
      * 
      * @param appId The application ID
      * @param page Page number (0-based)
@@ -102,19 +105,23 @@ public class CommentRepository {
                     .partitionValue(appId)
                     .build();
             
+            // Use filter expression to get only top-level comments (parent_id is null)
             QueryEnhancedRequest request = QueryEnhancedRequest.builder()
                     .queryConditional(software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo(key))
                     .scanIndexForward(false) // Sort by sort key in descending order (latest first)
-                    .limit(size * 2) // Get more items to account for filtering
+                    .filterExpression(Expression.builder()
+                            .expression("attribute_not_exists(parent_id)")
+                            .build())
+                    .limit(size * 3) // Get more items to account for filtering, but limit to reasonable number
                     .build();
             
             List<Comment> allComments = commentTable.query(request)
                     .items()
                     .stream()
-                    .filter(comment -> comment.getParentId() == null) // Top-level comments only
+                    .filter(comment -> comment.getParentId() == null) // Additional filter for safety
                     .collect(Collectors.toList());
             
-            // Manual pagination since DynamoDB doesn't support filtering + pagination together efficiently
+            // Manual pagination since DynamoDB filter expressions don't guarantee exact counts
             int startIndex = page * size;
             int endIndex = Math.min(startIndex + size, allComments.size());
             
@@ -279,8 +286,8 @@ public class CommentRepository {
     }
 
     /**
-     * Find paginated replies for a specific comment using scan operation.
-     * Note: This is inefficient for large datasets but simple for now.
+     * Find paginated replies for a specific comment using GSI query.
+     * Uses parent_index GSI for efficient querying.
      * 
      * @param parentId The parent comment ID
      * @param page Page number (0-based)
@@ -292,28 +299,26 @@ public class CommentRepository {
             log.debug("Finding paginated replies for parent comment: {}, page: {}, size: {}", parentId, page, size);
             DynamoDbTable<Comment> commentTable = getCommentTable();
             
-            // Use scan operation to find replies (simple but inefficient)
-            List<Comment> allReplies = commentTable.scan()
-                    .items()
+            // Use GSI query instead of scan for efficient retrieval
+            Key key = Key.builder()
+                    .partitionValue(parentId) // parent_id is the partition key in GSI
+                    .build();
+            
+            QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+                    .queryConditional(software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo(key))
+                    .scanIndexForward(false) // Sort by sort key in descending order (latest first)
+                    .limit(size) // Limit results to page size
+                    .build();
+            
+            // Execute query on GSI and collect results
+            List<Comment> replies = commentTable.index("parent_index").query(request)
                     .stream()
-                    .filter(comment -> parentId.equals(comment.getParentId())) // Filter by parent ID
-                    .sorted((c1, c2) -> c2.getCreatedAt().compareTo(c1.getCreatedAt())) // Sort by createdAt DESC
+                    .flatMap(queryPage -> queryPage.items().stream())
                     .collect(Collectors.toList());
             
-            // Manual pagination
-            int startIndex = page * size;
-            int endIndex = Math.min(startIndex + size, allReplies.size());
+            log.info("Found {} replies for parent: {}, page: {}", replies.size(), parentId, page);
+            return replies;
             
-            if (startIndex >= allReplies.size()) {
-                log.debug("Page {} is beyond available replies for parent: {}", page, parentId);
-                return List.of();
-            }
-            
-            List<Comment> paginatedReplies = allReplies.subList(startIndex, endIndex);
-            log.info("Found {} replies for parent: {}, page: {} (showing {}-{})", 
-                    paginatedReplies.size(), parentId, page, startIndex + 1, endIndex);
-            
-            return paginatedReplies;
         } catch (DynamoDbException e) {
             log.error("Error finding paginated replies for parent: {}", parentId, e);
             throw new RuntimeException("Failed to find paginated replies", e);
@@ -355,6 +360,7 @@ public class CommentRepository {
     /**
      * Find top-level comments for an app excluding comments by a specific user.
      * Used to get general comments excluding the requesting user's comments.
+     * Uses DynamoDB filter expressions for efficient filtering.
      */
     public List<Comment> findTopLevelCommentsByAppIdExcludingUser(String appId, String userId, int page, int size) {
         try {
@@ -364,20 +370,25 @@ public class CommentRepository {
                     .partitionValue(appId)
                     .build();
             
+            // Use filter expression to get only top-level comments and exclude specific user
             QueryEnhancedRequest request = QueryEnhancedRequest.builder()
                     .queryConditional(software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo(key))
                     .scanIndexForward(false) // Sort by sort key in descending order (latest first)
+                    .filterExpression(Expression.builder()
+                            .expression("attribute_not_exists(parent_id) AND user_id <> :userId")
+                            .putExpressionValue(":userId", AttributeValue.builder().s(userId).build())
+                            .build())
                     .limit(size * 3) // Get more items to account for filtering
                     .build();
             
             List<Comment> allComments = commentTable.query(request)
                     .items()
                     .stream()
-                    .filter(comment -> comment.getParentId() == null) // Top-level comments only
-                    .filter(comment -> !userId.equals(comment.getUserId())) // Exclude user's comments
+                    .filter(comment -> comment.getParentId() == null) // Additional filter for safety
+                    .filter(comment -> !userId.equals(comment.getUserId())) // Additional user filter for safety
                     .collect(Collectors.toList());
             
-            // Manual pagination since DynamoDB doesn't support filtering + pagination together efficiently
+            // Manual pagination since DynamoDB filter expressions don't guarantee exact counts
             int startIndex = page * size;
             int endIndex = Math.min(startIndex + size, allComments.size());
             
