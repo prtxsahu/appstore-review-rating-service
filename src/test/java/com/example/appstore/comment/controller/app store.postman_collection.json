@@ -1,0 +1,551 @@
+{
+	"info": {
+		"_postman_id": "e4703073-9ad6-4452-88ab-022e5cbb3763",
+		"name": "app store",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "48849224",
+		"_collection_link": "https://pratyakshsahu1-2538440.postman.co/workspace/pratyaksh-sahu's-Workspace~c944ca46-6b6e-48e6-81a3-ec2cb8338e2b/collection/48849224-e4703073-9ad6-4452-88ab-022e5cbb3763?action=share&source=collection_link&creator=48849224"
+	},
+	"item": [
+		{
+			"name": "app",
+			"item": [
+				{
+					"name": "create app",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Google Docs\",\n    \"description\": \"Good app for documentation\"\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search app",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseURL}}/apps?keyword=Docs&page=0&size=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps"
+							],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "Docs"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get detailed app info, with comments, and user info :: testing purpose",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2464ef1e-7686-413a-af66-94c22ece1004/detailed?userId=USER_463b6c8e-709a-4372-bac6-ec490e8685fe",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2464ef1e-7686-413a-af66-94c22ece1004",
+								"detailed"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "USER_463b6c8e-709a-4372-bac6-ec490e8685fe"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get app by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2464ef1e-7686-413a-af66-94c22ece1004",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2464ef1e-7686-413a-af66-94c22ece1004"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "comment",
+			"item": [
+				{
+					"name": "create comment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"USER_463b6c8e-709a-4372-bac6-ec490e8685fe\",\n    \"parentId\": null,\n    \"text\" : \"11 comment\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_555b3ac5-176f-4389-9344-80ee905b9a21/comments",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_555b3ac5-176f-4389-9344-80ee905b9a21",
+								"comments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get comments for app",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"USER_125\",\n    \"parentId\": null,\n    \"text\" : \"another comment on this application\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_555b3ac5-176f-4389-9344-80ee905b9a21/comments",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_555b3ac5-176f-4389-9344-80ee905b9a21",
+								"comments"
+							],
+							"query": [
+								{
+									"key": "cursor",
+									"value": "COMMENT_755925c5511d45e3b86fc4e1ce337dff",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search comment",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"USER_125\",\n    \"parentId\": null,\n    \"text\" : \"another comment on this application\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/comments/search?appId=APP_56217464-7cd6-41bf-b37d-44e8ec02c6b6&keyword=another",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"comments",
+								"search"
+							],
+							"query": [
+								{
+									"key": "appId",
+									"value": "APP_56217464-7cd6-41bf-b37d-44e8ec02c6b6"
+								},
+								{
+									"key": "keyword",
+									"value": "another"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update comment",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\n    \"text\" : \"this is an updated comment\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2464ef1e-7686-413a-af66-94c22ece1004/comments/COMMENT_9f1624f8a36344529883590c9621c60f",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2464ef1e-7686-413a-af66-94c22ece1004",
+								"comments",
+								"COMMENT_9f1624f8a36344529883590c9621c60f"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete comment",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2464ef1e-7686-413a-af66-94c22ece1004/comments/COMMENT_9f1624f8a36344529883590c9621c60f",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2464ef1e-7686-413a-af66-94c22ece1004",
+								"comments",
+								"COMMENT_9f1624f8a36344529883590c9621c60f"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create reply",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"USER_1255\",\n    \"text\" : \"this is a bad comment \"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_ea3e4966-e4c4-4e8e-ab03-1caade32eade/comments/COMMENT_09e33c5022a34b1bb2d7394df0c35b75/replies",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_ea3e4966-e4c4-4e8e-ab03-1caade32eade",
+								"comments",
+								"COMMENT_09e33c5022a34b1bb2d7394df0c35b75",
+								"replies"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get replies",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2464ef1e-7686-413a-af66-94c22ece1004/comments/COMMENT_20e7d5df7f284ef1b5612cf8d24f7abc/replies",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2464ef1e-7686-413a-af66-94c22ece1004",
+								"comments",
+								"COMMENT_20e7d5df7f284ef1b5612cf8d24f7abc",
+								"replies"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ratings",
+			"item": [
+				{
+					"name": "create rating",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"USER_125\",\n    \"value\": 5\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2772732f-9b40-4630-b18f-736f20cfea2b/rating",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2772732f-9b40-4630-b18f-736f20cfea2b",
+								"rating"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update rating",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"USER_125\",\n    \"value\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2772732f-9b40-4630-b18f-736f20cfea2b/rating",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2772732f-9b40-4630-b18f-736f20cfea2b",
+								"rating"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get rating",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2772732f-9b40-4630-b18f-736f20cfea2b/rating?userId=USER_125",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2772732f-9b40-4630-b18f-736f20cfea2b",
+								"rating"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "USER_125"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete rating",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/apps/APP_2772732f-9b40-4630-b18f-736f20cfea2b/rating?userId=USER_125",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"apps",
+								"APP_2772732f-9b40-4630-b18f-736f20cfea2b",
+								"rating"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "USER_125"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "create User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\" : \"pratyaksh\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/users",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get user by id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/users/USER_463b6c8e-709a-4372-bac6-ec490e8685fe",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"users",
+						"USER_463b6c8e-709a-4372-bac6-ec490e8685fe"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": "",
+			"type": "default"
+		}
+	]
+}
