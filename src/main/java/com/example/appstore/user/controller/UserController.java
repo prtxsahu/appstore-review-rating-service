@@ -2,7 +2,7 @@ package com.example.appstore.user.controller;
 
 import com.example.appstore.user.dto.CreateUserRequest;
 import com.example.appstore.user.dto.UserResponse;
-import com.example.appstore.user.service.UserService;
+import com.example.appstore.user.service.UserServiceInterface;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+    private final UserServiceInterface userService;
 
     /**
      * Create a new user.

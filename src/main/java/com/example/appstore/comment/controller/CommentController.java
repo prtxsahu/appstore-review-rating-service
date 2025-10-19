@@ -4,7 +4,7 @@ import com.example.appstore.comment.dto.CommentPageResponse;
 import com.example.appstore.comment.dto.CommentRequest;
 import com.example.appstore.comment.dto.CommentResponse;
 import com.example.appstore.comment.dto.UpdateCommentRequest;
-import com.example.appstore.comment.service.CommentService;
+import com.example.appstore.comment.service.CommentServiceInterface;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CommentController {
 
-    private final CommentService commentService;
+    private final CommentServiceInterface commentService;
 
     /**
      * Create a new comment or reply.

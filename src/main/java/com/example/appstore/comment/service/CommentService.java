@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CommentService {
+public class CommentService implements CommentServiceInterface {
 
     private final CommentRepository commentRepository;
     private final CommentSearchRepository commentSearchRepository;

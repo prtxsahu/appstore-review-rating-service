@@ -1,7 +1,7 @@
 package com.example.appstore.app.controller;
 
 import com.example.appstore.app.dto.*;
-import com.example.appstore.app.service.AppService;
+import com.example.appstore.app.service.AppServiceInterface;
 import com.example.appstore.shared.dto.SearchResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AppController {
 
-    private final AppService appService;
+    private final AppServiceInterface appService;
 
     /**
      * Create a new app.

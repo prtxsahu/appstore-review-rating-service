@@ -20,7 +20,7 @@ import java.util.Optional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RatingService {
+public class RatingService implements RatingServiceInterface {
     
     private final RatingRepository ratingRepository;
     

@@ -2,7 +2,7 @@ package com.example.appstore.rating.controller;
 
 import com.example.appstore.rating.dto.RatingRequest;
 import com.example.appstore.rating.dto.RatingResponse;
-import com.example.appstore.rating.service.RatingService;
+import com.example.appstore.rating.service.RatingServiceInterface;
 import com.example.appstore.rating.domain.Rating;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RatingController {
     
-    private final RatingService ratingService;
+    private final RatingServiceInterface ratingService;
 
     /**
      * Create a new rating for an app.

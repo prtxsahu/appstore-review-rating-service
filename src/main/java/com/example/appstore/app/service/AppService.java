@@ -6,8 +6,8 @@ import com.example.appstore.app.dto.CreateAppRequest;
 import com.example.appstore.app.repository.dynamodb.AppRepository;
 import com.example.appstore.app.repository.elasticsearch.AppSearchRepository;
 import com.example.appstore.rating.repository.dynamodb.AggregateRepository;
-import com.example.appstore.rating.service.RatingService;
-import com.example.appstore.comment.service.CommentService;
+import com.example.appstore.rating.service.RatingServiceInterface;
+import com.example.appstore.comment.service.CommentServiceInterface;
 import com.example.appstore.comment.dto.CommentResponse;
 import com.example.appstore.comment.dto.CommentPaginationInfo;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +28,13 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AppService {
+public class AppService implements AppServiceInterface {
 
     private final AppRepository appRepository;
     private final AggregateRepository aggregateRepository;
     private final AppSearchRepository appSearchRepository;
-    private final CommentService commentService;
-    private final RatingService ratingService;
+    private final CommentServiceInterface commentService;
+    private final RatingServiceInterface ratingService;
 
     /**
      * Create a new app.

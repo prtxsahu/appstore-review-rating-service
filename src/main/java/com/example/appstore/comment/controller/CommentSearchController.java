@@ -2,7 +2,7 @@ package com.example.appstore.comment.controller;
 
 import com.example.appstore.comment.dto.CommentResponse;
 import com.example.appstore.shared.dto.SearchResponse;
-import com.example.appstore.comment.service.CommentService;
+import com.example.appstore.comment.service.CommentServiceInterface;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class CommentSearchController {
 
-    private final CommentService commentService;
+    private final CommentServiceInterface commentService;
 
     /**
      * Search comments by app ID and keyword.

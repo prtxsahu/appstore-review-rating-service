@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import com.example.appstore.rating.domain.Aggregate;
 import com.example.appstore.rating.repository.dynamodb.AggregateRepository;
 import com.example.appstore.app.repository.elasticsearch.AppSearchRepository;
-import com.example.appstore.rating.service.RatingService;
+import com.example.appstore.rating.service.RatingServiceInterface;
 
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 @Component
 public class PseudoKafkaFlinkRatingStreamProcessor implements RatingObserver, RatingStreamProcessor {
 
-    private final RatingService ratingService;
+    private final RatingServiceInterface ratingService;
     private final AggregateRepository aggregateRepository;
     private final AppSearchRepository appSearchRepository;
 
@@ -40,7 +40,7 @@ public class PseudoKafkaFlinkRatingStreamProcessor implements RatingObserver, Ra
     /**
      * Constructor initializes the stream processor.
      */
-    public PseudoKafkaFlinkRatingStreamProcessor(RatingService ratingService, 
+    public PseudoKafkaFlinkRatingStreamProcessor(RatingServiceInterface ratingService, 
                                                AggregateRepository aggregateRepository,
                                                AppSearchRepository appSearchRepository) {
         this.ratingService = ratingService;
