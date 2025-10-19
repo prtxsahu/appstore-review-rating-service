@@ -95,6 +95,46 @@ public class AppService implements AppServiceInterface {
     }
 
     /**
+     * Get basic app information (metadata + average rating only).
+     */
+    public AppResponse getAppBasicInfo(String appId) {
+        log.info("=== APP SERVICE: Getting basic app info ===");
+        log.info("Input - appId: {}", appId);
+        
+        try {
+            log.info("Fetching app from DynamoDB - appId: {}", appId);
+            App app = appRepository.findById(appId)
+                    .orElseThrow(() -> {
+                        log.error("App not found in DynamoDB - appId: {}", appId);
+                        return new RuntimeException("App not found: " + appId);
+                    });
+            log.info("App found in DynamoDB - appId: {}, name: {}", app.getAppId(), app.getName());
+            log.debug("Retrieved app entity: {}", app);
+            
+            // Fetch average rating from aggregates table
+            log.info("Fetching average rating from aggregates table for appId: {}", appId);
+            BigDecimal avgRating = fetchAverageRatingFromAggregates(appId);
+            log.info("Retrieved average rating: {} for appId: {}", avgRating, appId);
+            
+            // Convert to response DTO (basic info only)
+            AppResponse response = AppResponse.builder()
+                    .appId(app.getAppId())
+                    .name(app.getName())
+                    .description(app.getDescription())
+                    .avgRating(avgRating)
+                    .updatedAt(app.getUpdatedAt())
+                    .build();
+            
+            log.info("Basic app info retrieval completed successfully - appId: {}, name: {}", response.getAppId(), response.getName());
+            log.debug("Response DTO: {}", response);
+            return response;
+        } catch (Exception e) {
+            log.error("Failed to get basic app info - appId: {}, error: {}", appId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
      * Get app by ID.
      */
     public AppResponse getAppById(String appId) {

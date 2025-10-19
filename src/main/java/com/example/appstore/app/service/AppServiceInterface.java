@@ -20,6 +20,14 @@ public interface AppServiceInterface {
     AppResponse createApp(CreateAppRequest request);
     
     /**
+     * Get basic app information (metadata + average rating only).
+     * 
+     * @param appId The app ID
+     * @return The app response with basic information only
+     */
+    AppResponse getAppBasicInfo(String appId);
+    
+    /**
      * Get an app by its ID.
      * 
      * @param appId The app ID

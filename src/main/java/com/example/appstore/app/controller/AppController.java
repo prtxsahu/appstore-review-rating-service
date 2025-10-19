@@ -45,23 +45,43 @@ public class AppController {
     }
 
     /**
-     * Get app by ID.
-     * GET /apps/{appId}?userId={userId}
+     * Get basic app information (metadata + average rating only).
+     * GET /apps/{appId}
      */
     @GetMapping("/{appId}")
-    public ResponseEntity<AppResponse> getApp(
+    public ResponseEntity<AppResponse> getAppBasicInfo(@PathVariable String appId) {
+        log.info("=== APP CONTROLLER: Getting basic app info ===");
+        log.info("Request received - appId: {}", appId);
+        
+        try {
+            AppResponse response = appService.getAppBasicInfo(appId);
+            log.info("Basic app info retrieved successfully - appId: {}, name: {}", response.getAppId(), response.getName());
+            log.debug("Full response: {}", response);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Failed to get basic app info - appId: {}, error: {}", appId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Get detailed app information (metadata + average rating + comments + user data).
+     * GET /apps/{appId}/detailed?userId={userId}
+     */
+    @GetMapping("/{appId}/detailed")
+    public ResponseEntity<AppResponse> getAppDetailed(
             @PathVariable String appId,
             @RequestParam(required = false) String userId) {
-        log.info("=== APP CONTROLLER: Getting app by ID ===");
+        log.info("=== APP CONTROLLER: Getting detailed app info ===");
         log.info("Request received - appId: {}, userId: {}", appId, userId);
         
         try {
             AppResponse response = appService.getAppById(appId, userId);
-            log.info("App retrieved successfully - appId: {}, name: {}", response.getAppId(), response.getName());
+            log.info("Detailed app info retrieved successfully - appId: {}, name: {}", response.getAppId(), response.getName());
             log.debug("Full response: {}", response);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Failed to get app - appId: {}, error: {}", appId, e.getMessage(), e);
+            log.error("Failed to get detailed app info - appId: {}, error: {}", appId, e.getMessage(), e);
             throw e;
         }
     }
