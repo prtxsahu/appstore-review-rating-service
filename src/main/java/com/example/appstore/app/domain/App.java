@@ -25,7 +25,7 @@ public class App {
     private String appId;
     private String name;
     private String description;
-    private BigDecimal avgRating;
+    private BigDecimal avgRating; // Unused and should be removed 
     private Instant updatedAt;
 
     @DynamoDbPartitionKey
